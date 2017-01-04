@@ -1,0 +1,6 @@
+**/node_modules
+bundles/js/*
+!bundles/js/main.js
+.git
+webpack-stats-local.json
+webpack-stats-prod.json
