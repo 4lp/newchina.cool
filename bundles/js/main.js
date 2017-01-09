@@ -55,7 +55,7 @@ function initWater() {
 	// Material attributes from MeshPhongMaterial
 	material.color = new THREE.Color( materialColor );
 	material.specular = new THREE.Color( Math.random() * 0xffffff );
-	material.shininess = 500;
+	material.shininess = 10;
 	// Sets the uniforms with the material values
 	material.uniforms.diffuse.value = new THREE.Color( Math.random() * 0xffffff );
 	material.uniforms.specular.value = new THREE.Color( Math.random() * 0xffffff );
@@ -166,6 +166,38 @@ function onDocumentTouchMove( event ) {
 	}
 }
 
+function moveUp() {	
+	new TWEEN.Tween( cube.rotation ).to( {  z:  cube.rotation.z + toRadian(-90)}, 1000 ).easing( TWEEN.Easing.Quadratic.Out).start();
+}
+
+function moveDown() {
+	new TWEEN.Tween( cube.rotation ).to( {  z:  cube.rotation.z + toRadian(90)}, 1000 ).easing( TWEEN.Easing.Quadratic.Out).start();
+}
+
+function moveLeft() {
+	new TWEEN.Tween( cube.rotation ).to( {  y:  cube.rotation.y + toRadian(90)}, 1000 ).easing( TWEEN.Easing.Quadratic.Out).start();
+}
+
+function moveRight() {
+	new TWEEN.Tween( cube.rotation ).to( {  y:  cube.rotation.y + toRadian(-90)}, 1000 ).easing( TWEEN.Easing.Quadratic.Out).start();
+} 
+
+function onKeyDown(e) {
+    e = e || window.event;
+    if (e.keyCode == '38') {
+        moveUp()
+    }
+    else if (e.keyCode == '40') {
+        moveDown()
+    }
+    else if (e.keyCode == '37') {
+       moveLeft()
+    }
+    else if (e.keyCode == '39') {
+       moveRight()
+    }
+}
+
 function wateranimate() {
 	waterrender();
 }
@@ -184,16 +216,22 @@ function init() {
 	renderer.autoClear = false;
 	renderer.domElement.style.position = "absolute";
 	document.body.appendChild(renderer.domElement);
-	camera.position.set(2000, 0, 0)
+	camera.position.set(1200, 0, 0)
 	camera.lookAt(scene.position);
 	createCSS3DObject(content);
+
+	//master camera
+	let masterCamera = new THREE.PerspectiveCamera(45,
+	window.innerWidth / window.innerHeight, 0.1, 1000);
+	masterCamera.position.set(0,0,0)
+	masterCamera.lookAt(scene.position)
 
 	//water
 	container = document.createElement( 'div' );
 	document.body.appendChild( container );
 	watercamera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 1, 3000 );
 	watercamera.rotation.x = toRadian(-90)
-	watercamera.position.set( 0, 400, 30);
+	watercamera.position.set( 0, 300, 30);
 	waterscene = new THREE.Scene();
 	var sun = new THREE.DirectionalLight( Math.random() * 0xffffff , 1.0 );
 	sun.position.set( 300, 400, 175 );
@@ -211,33 +249,10 @@ function init() {
 	document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 	document.addEventListener( 'touchstart', onDocumentTouchStart, false );
 	document.addEventListener( 'touchmove', onDocumentTouchMove, false );
+	document.addEventListener( 'keydown', onKeyDown, false );
 	window.addEventListener( 'resize', onWindowResize, false );
 	initWater();
 	render();
-}
-
-function moveUp() {
-	cube.rotation.z += toRadian(-90)
-}
-
-function moveDown() {
-	cube.rotation.z += toRadian(90)
-}
-
-function moveLeft() {
-	cube.rotation.y += toRadian(90)
-}
-
-function moveRight() {
-	cube.rotation.y += toRadian(-90)
-}
-
-function turnRight() {
-	cube.rotation.x += toRadian(-90)
-}
-
-function turnLeft() {
-	cube.rotation.x += toRadian(90)
 }
 
 function createCSS3DObject(content) {
@@ -252,9 +267,8 @@ function createCSS3DObject(content) {
 	info.style.fontWeight = 'bold';
 	info.style.backgroundColor = Math.random() * 0xffffff
 	info.style.zIndex = '1';
-	info.innerHTML = '<p>use the control panel to move the cube or click and drag</p><h3 onClick="moveLeft()" onTouchEnd="moveLeft()"><-</h3><h3 onClick="moveRight()" onTouchEnd="moveRight()">-></h3><h3 onClick="moveDown()" onTouchEnd="moveDown()">v</h3><h3 onClick="moveUp()" onTouchEnd="moveUp()">^</h3><h3 onClick="turnRight()" onTouchEnd="turnRight()">turn right</h3><h3 onClick="turnLeft() "onTouchEnd="turnLeft()">turn left</h3>';
+	info.innerHTML = '<p>click and drag or use your keyboard to move the cube</p>'
 	document.body.appendChild( info );
-
 	// convert the string to dome elements
 	var wrapper = document.createElement('div');
 	wrapper.innerHTML = content;
@@ -300,7 +314,6 @@ function createCSS3DObject(content) {
 		cube.add( object );
 
 	}
-
 }
 
 function waterrender() {
@@ -333,9 +346,15 @@ function toRadian(degrees) {
 	return radians
 }
 
+function toDegrees(radians) {
+	let degrees = Math.round(radians / (Math.PI/180))
+	return degrees
+}
+
 function render() {
 	requestAnimationFrame( wateranimate );
 	requestAnimationFrame(render);
+	TWEEN.update();
 	renderer.render(scene, camera);
 	controls.update();
 	}

@@ -3,17 +3,11 @@ import { render } from "react-dom"
 
 
 class App extends React.Component {
-	increment (num){
-		num += 1
-		return num
-	}
 
 	render(){
-		let number = 0
 		return (
 			<div id="page0">
 				<h1 className="text-center">HELLO NEW CHINA</h1>
-				<a onClick={() => this.increment(number)}>{number}</a>
 			</div>
 		)
 	}
@@ -42,7 +36,7 @@ class App4 extends React.Component {
 	render(){
 		return(
 			<div id="page3">
-				<iframe style={{border: "0"}} width="400" height="400" src="https://www.youtube.com/embed/z6VMK1t3TuY?t=54s" frameBorder="0" allowFullScreen></iframe>
+				<iframe style={{border: "0"}} width="400" height="400" src="https://www.youtube.com/embed/z6VMK1t3TuY?t=54s&disablekb=1" frameBorder="0" allowFullScreen></iframe>
 			</div>
 			)
 	}
@@ -51,7 +45,7 @@ class App5 extends React.Component {
 	render(){
 		return(
 			<div id="page4">
-				<p>EMAIL US!</p>
+				<a href="mailto:booking@newchina.cool">EMAIL US!</a>
 			</div>
 			)
 	}
