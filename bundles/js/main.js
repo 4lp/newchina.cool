@@ -1,3 +1,11 @@
+//background
+if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+var container;
+var glcamera, glscene, glrenderer, particles, geometry, materials = [], parameters, i, h, color, sprite, size;
+var mouseX = 0, mouseY = 0;
+var windowHalfX = window.innerWidth / 2;
+var windowHalfY = window.innerHeight / 2;
+
 // global variables
 var content = "<div></div>"
 var cube;
@@ -6,133 +14,34 @@ var scene;
 var camera;
 var control;
 
-//water globals
-if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
-var hash = document.location.hash.substr( 1 );
-if ( hash ) hash = parseInt( hash, 0 );
-// Texture width for simulation
-var WIDTH = hash || 128;
-var NUM_TEXELS = WIDTH * WIDTH;
-// Water size in system units
-var BOUNDS = window.innerWidth;
-var BOUNDS_HALF = BOUNDS * 0.5;
-var container, stats;
-var watercamera, waterscene, waterrenderer;
-var mouseMoved = false;
-var mouseCoords = new THREE.Vector2();
-var raycaster = new THREE.Raycaster();
-var waterMesh;
-var meshRay;
-var gpuCompute;
-var heightmapVariable;
-var waterUniforms;
-var smoothShader;
-var simplex = new SimplexNoise();
-var windowHalfX = window.innerWidth / 2;
-var windowHalfY = window.innerHeight / 2;
-
-function change(n) {
-				location.hash = n;
-				location.reload();
-				return false;
-			}
-
-function initWater() {
-	var materialColor = Math.random() * 0xffffff 
-	var geometry = new THREE.PlaneBufferGeometry( BOUNDS, BOUNDS, WIDTH - 1, WIDTH -1 );
-	// material: make a ShaderMaterial clone of MeshPhongMaterial, with customized vertex shader
-	var material = new THREE.ShaderMaterial( {
-		uniforms: THREE.UniformsUtils.merge( [
-			THREE.ShaderLib[ 'phong' ].uniforms,
-			{
-				heightmap: { value: null }
-			}
-		] ),
-		vertexShader: document.getElementById( 'waterVertexShader' ).textContent,
-		fragmentShader: THREE.ShaderChunk[ 'meshphong_frag' ]
-	} );
-	material.lights = true;
-	// Material attributes from MeshPhongMaterial
-	material.color = new THREE.Color( materialColor );
-	material.specular = new THREE.Color( Math.random() * 0xffffff );
-	material.shininess = 10;
-	// Sets the uniforms with the material values
-	material.uniforms.diffuse.value = new THREE.Color( Math.random() * 0xffffff );
-	material.uniforms.specular.value = new THREE.Color( Math.random() * 0xffffff );
-	material.uniforms.shininess.value = Math.max( material.shininess, 1e-4 );
-	material.uniforms.opacity.value = material.opacity;
-	// Defines
-	material.defines.WIDTH = WIDTH.toFixed( 1 );
-	material.defines.BOUNDS = BOUNDS.toFixed( 1 );
-	waterUniforms = material.uniforms;
-	waterMesh = new THREE.Mesh( geometry, material );
-	waterMesh.rotation.x = - Math.PI / 2;
-	waterMesh.matrixAutoUpdate = false;
-	waterMesh.updateMatrix();
-	waterscene.add( waterMesh );
-	// Mesh just for mouse raycasting
-	var geometryRay = new THREE.PlaneBufferGeometry( BOUNDS, BOUNDS, 1, 1 );
-	meshRay = new THREE.Mesh( geometryRay, new THREE.MeshBasicMaterial( { color: 0xFFFFFF, visible: false } ) );
-	meshRay.rotation.x = - Math.PI / 2;
-	meshRay.matrixAutoUpdate = false;
-	meshRay.updateMatrix();
-	waterscene.add( meshRay );
-	// Creates the gpu computation class and sets it up
-	gpuCompute = new GPUComputationRenderer( WIDTH, WIDTH, waterrenderer );
-	var heightmap0 = gpuCompute.createTexture();
-	fillTexture( heightmap0 );
-	heightmapVariable = gpuCompute.addVariable( "heightmap", document.getElementById( 'heightmapFragmentShader' ).textContent, heightmap0 );
-	gpuCompute.setVariableDependencies( heightmapVariable, [ heightmapVariable ] );
-	heightmapVariable.material.uniforms.mousePos = { value: new THREE.Vector2( 10000, 10000 ) };
-	heightmapVariable.material.uniforms.mouseSize = { value: 20.0 };
-	heightmapVariable.material.uniforms.viscosityConstant = { value: 0.03 };
-	heightmapVariable.material.defines.BOUNDS = BOUNDS.toFixed( 1 );
-	var error = gpuCompute.init();
-	if ( error !== null ) {
-	    console.error( error );
-	}
-	// Create compute shader to smooth the water surface and velocity
-	smoothShader = gpuCompute.createShaderMaterial( document.getElementById( 'smoothFragmentShader' ).textContent, { texture: { value: null } } );
-	}
-
-function fillTexture( texture ) {
-	var waterMaxHeight = 10;
-	function noise( x, y, z ) {
-		var multR = waterMaxHeight;
-		var mult = 0.025;
-		var r = 0;
-		for ( var i = 0; i < 15; i++ ) {
-			r += multR * simplex.noise3d( x * mult, y * mult, z * mult );
-			multR *= 0.53 + 0.025 * i;
-			mult *= 1.25;
-		}
-		return r;
-	}
-	var pixels = texture.image.data;
-	var p = 0;
-	for ( var j = 0; j < WIDTH; j++ ) {
-		for ( var i = 0; i < WIDTH; i++ ) {
-			var x = i * 128 / WIDTH;
-			var y = j * 128 / WIDTH;
-		        pixels[ p + 0 ] = noise( x, y, 123.4 );
-			pixels[ p + 1 ] = 0;
-			pixels[ p + 2 ] = 0;
-			pixels[ p + 3 ] = 1;
-			p += 4;
-		}
-	}
+function toRadian(degrees) {
+	let radians = degrees * (Math.PI/180)
+	return radians
 }
 
-function smoothWater() {
-	var currentRenderTarget = gpuCompute.getCurrentRenderTarget( heightmapVariable );
-	var alternateRenderTarget = gpuCompute.getAlternateRenderTarget( heightmapVariable );
-	for ( var i = 0; i < 10; i++ ) {
-		smoothShader.uniforms.texture.value = currentRenderTarget.texture;
-		gpuCompute.doRenderTarget( smoothShader, alternateRenderTarget );
-		smoothShader.uniforms.texture.value = alternateRenderTarget.texture;
-		gpuCompute.doRenderTarget( smoothShader, currentRenderTarget );
-	}
-	
+function toDegrees(radians) {
+	let degrees = Math.round(radians / (Math.PI/180))
+	return degrees
+}
+
+function onKeyDown(e) {
+    e = e || window.event;
+    //up
+    if (e.keyCode == '38') {
+        new TWEEN.Tween( cube.rotation ).to( {  z:  cube.rotation.z + toRadian(-90)}, 1000 ).easing( TWEEN.Easing.Quadratic.Out).start();
+    }
+    //down
+    else if (e.keyCode == '40') {
+        new TWEEN.Tween( cube.rotation ).to( {  z:  cube.rotation.z + toRadian(90)}, 1000 ).easing( TWEEN.Easing.Quadratic.Out).start();
+    }
+    //left
+    else if (e.keyCode == '37') {
+       new TWEEN.Tween( cube.rotation ).to( {  y:  cube.rotation.y + toRadian(90)}, 1000 ).easing( TWEEN.Easing.Quadratic.Out).start();
+    }
+    //right
+    else if (e.keyCode == '39') {
+      new TWEEN.Tween( cube.rotation ).to( {  y:  cube.rotation.y + toRadian(-90)}, 1000 ).easing( TWEEN.Easing.Quadratic.Out).start();
+    }
 }
 
 function onWindowResize() {
@@ -140,66 +49,28 @@ function onWindowResize() {
 	windowHalfY = window.innerHeight / 2;
 	camera.aspect = window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
-	waterrenderer.setSize( window.innerWidth, window.innerHeight );
-}
-
-function setMouseCoords( x, y ) {
-	mouseCoords.set( ( x / window.innerWidth ) * 2 - 1, -( y / window.innerHeight ) * 2 + 1);
-	mouseMoved = true;
+	renderer.setSize( window.innerWidth, window.innerHeight );
 }
 
 function onDocumentMouseMove( event ) {
-	setMouseCoords( event.clientX, event.clientY );
+	mouseX = event.clientX - windowHalfX;
+	mouseY = event.clientY - windowHalfY;
 }
 
 function onDocumentTouchStart( event ) {
 	if ( event.touches.length === 1 ) {
 		event.preventDefault();
-		setMouseCoords( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+		mouseX = event.touches[ 0 ].pageX - windowHalfX;
+		mouseY = event.touches[ 0 ].pageY - windowHalfY;
 	}
 }
 
 function onDocumentTouchMove( event ) {
 	if ( event.touches.length === 1 ) {
 		event.preventDefault();
-		setMouseCoords( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY );
+		mouseX = event.touches[ 0 ].pageX - windowHalfX;
+		mouseY = event.touches[ 0 ].pageY - windowHalfY;
 	}
-}
-
-function moveUp() {	
-	new TWEEN.Tween( cube.rotation ).to( {  z:  cube.rotation.z + toRadian(-90)}, 1000 ).easing( TWEEN.Easing.Quadratic.Out).start();
-}
-
-function moveDown() {
-	new TWEEN.Tween( cube.rotation ).to( {  z:  cube.rotation.z + toRadian(90)}, 1000 ).easing( TWEEN.Easing.Quadratic.Out).start();
-}
-
-function moveLeft() {
-	new TWEEN.Tween( cube.rotation ).to( {  y:  cube.rotation.y + toRadian(90)}, 1000 ).easing( TWEEN.Easing.Quadratic.Out).start();
-}
-
-function moveRight() {
-	new TWEEN.Tween( cube.rotation ).to( {  y:  cube.rotation.y + toRadian(-90)}, 1000 ).easing( TWEEN.Easing.Quadratic.Out).start();
-} 
-
-function onKeyDown(e) {
-    e = e || window.event;
-    if (e.keyCode == '38') {
-        moveUp()
-    }
-    else if (e.keyCode == '40') {
-        moveDown()
-    }
-    else if (e.keyCode == '37') {
-       moveLeft()
-    }
-    else if (e.keyCode == '39') {
-       moveRight()
-    }
-}
-
-function wateranimate() {
-	waterrender();
 }
 
 
@@ -218,40 +89,55 @@ function init() {
 	document.body.appendChild(renderer.domElement);
 	camera.position.set(1200, 0, 0)
 	camera.lookAt(scene.position);
+	document.addEventListener( 'keydown', onKeyDown, false );
 	createCSS3DObject(content);
 
-	//master camera
-	let masterCamera = new THREE.PerspectiveCamera(45,
-	window.innerWidth / window.innerHeight, 0.1, 1000);
-	masterCamera.position.set(0,0,0)
-	masterCamera.lookAt(scene.position)
-
-	//water
+	//background
 	container = document.createElement( 'div' );
 	document.body.appendChild( container );
-	watercamera = new THREE.PerspectiveCamera( 90, window.innerWidth / window.innerHeight, 1, 3000 );
-	watercamera.rotation.x = toRadian(-90)
-	watercamera.position.set( 0, 300, 30);
-	waterscene = new THREE.Scene();
-	var sun = new THREE.DirectionalLight( Math.random() * 0xffffff , 1.0 );
-	sun.position.set( 300, 400, 175 );
-	waterscene.add( sun );
-	var sun2 = new THREE.DirectionalLight( Math.random() * 0xffffff , 0.6 );
-	sun2.position.set( -100, 350, -200 );
-	waterscene.add( sun2 );
-	waterrenderer = new THREE.WebGLRenderer();
-	waterrenderer.setClearColor( 0x000000 );
-	waterrenderer.setPixelRatio( window.devicePixelRatio );
-	waterrenderer.setSize( window.innerWidth, window.innerHeight );
-	waterrenderer.domElement.style.zIndex = 5;
-	waterrenderer.autoClear = false;
-	container.appendChild( waterrenderer.domElement );
+	glcamera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 2000 );
+	glcamera.position.z = 1000;
+	glscene = new THREE.Scene();
+	glscene.fog = new THREE.FogExp2( 0x000000, 0.0008 );
+	geometry = new THREE.Geometry();
+	var textureLoader = new THREE.TextureLoader();
+	sprite1 = textureLoader.load( "./mushroomemoji.png" );
+
+	for ( i = 0; i < 100; i ++ ) {
+		var vertex = new THREE.Vector3();
+		vertex.x = Math.random() * 2500 - 1000;
+		vertex.y = Math.random() * 2500 - 1000;
+		vertex.z = Math.random() * 2000 - 1000;
+		geometry.vertices.push( vertex );
+	}
+	parameters = [
+		[ [1.0, 0.2, 0.5], sprite1, 20 ],
+		[ [0.95, 0.1, 0.5], sprite1, 15 ],
+		[ [0.90, 0.05, 0.5], sprite1, 10 ],
+		[ [0.85, 0, 0.5], sprite1, 8 ],
+		[ [0.80, 0, 0.5], sprite1, 5 ]
+	];
+	for ( i = 0; i < parameters.length; i ++ ) {
+		color  = parameters[i][0];
+		sprite = parameters[i][1];
+		size   = parameters[i][2];
+		materials[i] = new THREE.PointsMaterial( { size: size, map: sprite, blending: THREE.AdditiveBlending, depthTest: false, transparent : true } );
+		materials[i].color.setHSL( color[0], color[1], color[2] );
+		particles = new THREE.Points( geometry, materials[i] );
+		particles.rotation.x = Math.random() * 6;
+		particles.rotation.y = Math.random() * 6;
+		particles.rotation.z = Math.random() * 6;
+		glscene.add( particles );
+	}
+	glrenderer = new THREE.WebGLRenderer();
+	glrenderer.setPixelRatio( window.devicePixelRatio );
+	glrenderer.setSize( window.innerWidth, window.innerHeight );
+	container.appendChild( glrenderer.domElement );
 	document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 	document.addEventListener( 'touchstart', onDocumentTouchStart, false );
 	document.addEventListener( 'touchmove', onDocumentTouchMove, false );
-	document.addEventListener( 'keydown', onKeyDown, false );
 	window.addEventListener( 'resize', onWindowResize, false );
-	initWater();
+
 	render();
 }
 
@@ -279,8 +165,7 @@ function createCSS3DObject(content) {
 	div.style.width = '200px';
 	div.style.height = '200px';
 	div.style.opacity = 0.5;
-	div.style.background = new THREE.Color(Math.random()
-	* 0xffffff).getStyle();
+	div.style.background = new THREE.Color(Math.random() * 0xffffff).getStyle();
 	div.style.position = 'absolute';
 
 	// controls - need to remove mouse
@@ -316,43 +201,28 @@ function createCSS3DObject(content) {
 	}
 }
 
-function waterrender() {
-	var uniforms = heightmapVariable.material.uniforms;
-	if ( mouseMoved ) {
-		this.raycaster.setFromCamera( mouseCoords, watercamera );
-		var intersects = this.raycaster.intersectObject( meshRay );
-		if ( intersects.length > 0 ) {
-		    var point = intersects[ 0 ].point;
-		    uniforms.mousePos.value.set( point.x, point.z );
+function glrender() {
+	var time = Date.now() * 0.00005;
+	glcamera.position.x += ( mouseX - glcamera.position.x ) * 0.05;
+	glcamera.position.y += ( - mouseY - glcamera.position.y ) * 0.05;
+	camera.lookAt( glscene.position );
+	for ( i = 0; i < glscene.children.length; i ++ ) {
+		var object = glscene.children[ i ];
+		if ( object instanceof THREE.Points ) {
+			object.rotation.y = time * ( i < 4 ? i + 1 : - ( i + 1 ) );
 		}
-		else {
-		    uniforms.mousePos.value.set( 10000, 10000 );
-		}
-		mouseMoved = false;
 	}
-	else {
-		uniforms.mousePos.value.set( 10000, 10000 );
+	for ( i = 0; i < materials.length; i ++ ) {
+		color = parameters[i][0];
+		h = ( 360 * ( color[0] + time ) % 360 ) / 360;
+		materials[i].color.setHSL( h, color[1], color[2] );
 	}
-	// Do the gpu computation
-	gpuCompute.compute();
-	// Get compute output in custom uniform
-	waterUniforms.heightmap.value = gpuCompute.getCurrentRenderTarget( heightmapVariable ).texture;
-	// Render
-	waterrenderer.render( waterscene, watercamera );
-}
-
-function toRadian(degrees) {
-	let radians = degrees * (Math.PI/180)
-	return radians
-}
-
-function toDegrees(radians) {
-	let degrees = Math.round(radians / (Math.PI/180))
-	return degrees
+	glrenderer.render( glscene, glcamera );
 }
 
 function render() {
-	requestAnimationFrame( wateranimate );
+	requestAnimationFrame(glrender)
+	glrender()
 	requestAnimationFrame(render);
 	TWEEN.update();
 	renderer.render(scene, camera);
