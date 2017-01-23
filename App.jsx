@@ -1,6 +1,7 @@
 import React from "react"
 import { render } from "react-dom"
 
+const fortunes = ["fortune 1", "fortune 2"]
 
 class App extends React.Component {
 
@@ -51,10 +52,34 @@ class App5 extends React.Component {
 	}
 }
 class App6 extends React.Component {
+	constructor(props){
+	  	super(props);
+	  	this.state = {
+	  		fortune: ""
+	  	};
+  	}
+
+  	setFortune(fortune){
+  		this.setState({ fortune: fortune })
+  	}
+
+  	getRandomInt(min, max) {
+		  min = Math.ceil(min);
+		  max = Math.floor(max);
+		  return Math.floor(Math.random() * (max - min)) + min;
+		}
+
+  	getFortune() {
+  		let len = fortunes.length
+  		let i = this.getRandomInt(0, len)
+  		this.setFortune(fortunes[i])
+  	}
+
 	render(){
 		return(
 			<div id="page5">
-				<p>~ask the noochCube~</p>
+				<button className="btn" onClick={() => this.getFortune()}>~ask the noochCube~</button>
+				<p>{this.state.fortune}</p>
 			</div>
 			)
 	}

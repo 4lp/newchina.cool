@@ -12,7 +12,6 @@ var cube;
 var renderer;
 var scene;
 var camera;
-var control;
 var envelopeDown
 var envelopeFace
 var parent
@@ -101,9 +100,6 @@ function init() {
 	scene = new THREE.Scene();
 	camera = new THREE.PerspectiveCamera(45,
 	window.innerWidth / window.innerHeight, 0.1, 1000);
-	control = new function() {
-		this.rotationSpeed = 0.005;
-	};
 	renderer = new THREE.CSS3DRenderer();
 	renderer.setSize(window.innerWidth, window.innerHeight);
 	renderer.autoClear = false;

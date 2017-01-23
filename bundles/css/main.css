@@ -49,32 +49,32 @@ body {
 #triangle-down {
     width: 0;
     height: 0;
-    border-left: 199px solid transparent;
-    border-right: 199px solid transparent;
-    border-top: 199px solid red;
+    border-left: 200px solid transparent;
+    border-right: 200px solid transparent;
+    border-top: 200px solid red;
     transform-origin: 100% 50% 0;
 }
 
 #triangle-up {
     width: 0;
     height: 0;
-    border-left: 199px solid transparent;
-    border-right: 199px solid transparent;
-    border-bottom: 199px solid red;
+    border-left: 200px solid transparent;
+    border-right: 200px solid transparent;
+    border-bottom: 200px solid red;
 }
                 
 #triangle-left {
     width: 0;
     height: 0;
-    border-top: 199px solid transparent;
-    border-right: 199px solid red;
-    border-bottom: 199px solid transparent;
+    border-top: 200px solid transparent;
+    border-right: 200px solid red;
+    border-bottom: 200px solid transparent;
 }
 
 #triangle-right {
     width: 0;
     height: 0;
-    border-top: 199px solid transparent;
-    border-left: 199px solid red;
-    border-bottom: 199px solid transparent;
+    border-top: 200px solid transparent;
+    border-left: 200px solid red;
+    border-bottom: 200px solid transparent;
 }
