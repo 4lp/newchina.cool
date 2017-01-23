@@ -13,6 +13,10 @@ var renderer;
 var scene;
 var camera;
 var control;
+var envelopeDown
+var envelopeFace
+var parent
+var messageObj
 
 function toRadian(degrees) {
 	let radians = degrees * (Math.PI/180)
@@ -42,6 +46,24 @@ function onKeyDown(e) {
     else if (e.keyCode == '39') {
       new TWEEN.Tween( cube.rotation ).to( {  y:  cube.rotation.y + toRadian(-90)}, 1000 ).easing( TWEEN.Easing.Quadratic.Out).start();
     }
+}
+
+function setEnvelopeState() {
+	envelopeDown = !envelopeDown
+}
+
+function moveEnvelope() {
+	if (envelopeDown === false) {
+		let parentTween = new TWEEN.Tween( parent.rotation ).to( {  x:  parent.rotation.x + toRadian(180)}, 1000 ).easing( TWEEN.Easing.Quadratic.Out).start();
+		new TWEEN.Tween( messageObj.position ).to( {  y:  messageObj.position.y - 350}, 1000 ).easing( TWEEN.Easing.Quadratic.Out).start();
+		parentTween.delay(1000)
+		parentTween.start()
+	} else {
+		new TWEEN.Tween( parent.rotation ).to( {  x:  parent.rotation.x + toRadian(-180)}, 1000 ).easing( TWEEN.Easing.Quadratic.Out).start();
+		let messageTween = new TWEEN.Tween( messageObj.position ).to( {  y:  messageObj.position.y + 350}, 1000 ).easing( TWEEN.Easing.Quadratic.Out)
+		messageTween.delay(1000)
+		messageTween.start()
+	}
 }
 
 function onWindowResize() {
@@ -99,6 +121,7 @@ function init() {
 	glcamera.position.z = 1000;
 	glscene = new THREE.Scene();
 	glscene.fog = new THREE.FogExp2( 0x000000, 0.0008 );
+	glscene.background = new THREE.Color( 0x000000 );
 	geometry = new THREE.Geometry();
 	var textureLoader = new THREE.TextureLoader();
 	sprite1 = textureLoader.load( "./mushroomemoji.png" );
@@ -199,6 +222,52 @@ function createCSS3DObject(content) {
 		cube.add( object );
 
 	}
+
+	//message
+	let message = document.createElement('div')
+	message.id = "message"
+	message.style.width = '200px'
+	message.style.height = '200px'
+	message.style.background = new THREE.Color( Math.random() * 0xffffff ).getStyle();
+	messageObj = new THREE.CSS3DObject(message)
+	messageObj.position.z = 200
+	cube.add(messageObj)
+
+	//envelope body
+	let envelopeup = document.createElement('div')
+	envelopeup.id = "triangle-up"
+	let envelopeUpFace = new THREE.CSS3DObject(envelopeup)
+	envelopeUpFace.position.z = 200
+	envelopeUpFace.position.y = -100
+	cube.add(envelopeUpFace)
+
+	let enveloperight = document.createElement('div')
+	enveloperight.id = "triangle-right"
+	let envelopeRightFace = new THREE.CSS3DObject(enveloperight)
+	envelopeRightFace.position.z = 200
+	envelopeRightFace.position.x = -100
+	cube.add(envelopeRightFace)
+
+	let envelopeleft = document.createElement('div')
+	envelopeleft.id = "triangle-left"
+	let envelopeLeftFace = new THREE.CSS3DObject(envelopeleft)
+	envelopeLeftFace.position.z = 200
+	envelopeLeftFace.position.x = 100
+	cube.add(envelopeLeftFace)
+
+	//envelope top
+	let envelope = document.createElement('div')
+	envelope.id = "triangle-down"
+	envelope.onclick = function(e) {setEnvelopeState(), moveEnvelope()}
+	envelopeFace = new THREE.CSS3DObject(envelope)
+	parent = new THREE.Object3D();
+	envelopeFace.applyMatrix( new THREE.Matrix4().makeTranslation( 0, 100, 0 ) );
+	parent.add(envelopeFace)
+	parent.position.z = 200
+	parent.position.y = 200
+	envelopeFace.position.y = -100
+	envelopeFace.rotation.x = toRadian(0)
+	cube.add(parent)
 }
 
 function glrender() {

@@ -44,8 +44,8 @@ class App4 extends React.Component {
 class App5 extends React.Component {
 	render(){
 		return(
-			<div id="page4">
-				<a href="mailto:booking@newchina.cool">EMAIL US!</a>
+			<div id="message">
+				<p><a href="mailto:booking@newchina.cool">EMAIL US</a> at booking@newchina.cool</p>
 			</div>
 			)
 	}
@@ -64,5 +64,5 @@ render(<App/>, document.getElementById("page0"))
 render(<App2/>, document.getElementById("page1"))
 render(<App3/>, document.getElementById("page2"))
 render(<App4/>, document.getElementById("page3"))
-render(<App5/>, document.getElementById("page4"))
+render(<App5/>, document.getElementById("message"))
 render(<App6/>, document.getElementById("page5"))
